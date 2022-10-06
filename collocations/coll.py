@@ -13,6 +13,20 @@ import json
 
 doctypes = {'Alle dokumenter': 'all', 'Aviser': 'digavis', 'Bøker': 'digibok', 'Tidsskrift': 'digitidsskrift', 'Stortingsdokumenter': 'digistorting'}
 
+references = {
+    "generisk referanse (1800-2022)": "reference/nob-nno_1800_2022.csv",
+    "nåtidig bokmål (2000-)": "reference/nob_2000_2022.csv",
+    "nåtidig nynorsk (2000-)": "reference/nno_2000_2022.csv",
+    "bokmål (1950-2000)": "reference/nob_1950_2000.csv",
+    "nynorsk (1950-2000)": "reference/nno_1950_2000.csv",
+    "bokmål (1920-1950)": "reference/nob_1920_1950.csv",
+    "nynorsk (1920-1950)": "reference/nno_1920_1950.csv",
+    "bokmål (1875-1920)": "reference/nob_1875_1920.csv",
+    "nynorsk (1875-1920)": "reference/nno_1875_1920.csv",
+    "tidlig dansk-norsk/bokmål (før 1875)": "reference/nob_1800_1875.csv",
+    "tidlig nynorsk (før 1875)": "reference/nob_1848_1875.csv"
+}
+
 # ADAPTED FROM: https://discuss.streamlit.io/t/how-to-download-file-in-streamlit/1806
 def get_table_download_link(content, link_content="XLSX", filename="corpus.xlsx"):
     """Generates a link allowing the data in a given panda dataframe to be downloaded
@@ -28,9 +42,10 @@ def get_table_download_link(content, link_content="XLSX", filename="corpus.xlsx"
 
 def to_excel(df, index_arg=False):
     output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, sheet_name='Sheet1', index=index_arg)
-    writer.save()
+
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Sheet1', index=index_arg)
+        
     processed_data = output.getvalue()
     return processed_data
 
@@ -78,7 +93,14 @@ def get_reference(corpus, from_year = 1990, to_year = 2020, limit=50000):
 def get_corpus(doctype="digibok", from_year=1990, to_year=2020, limit=1000, freetext=None, fulltext=None):
     try:
         corpus = d2.document_corpus(doctype=doctype, from_year=from_year, to_year=to_year, limit=limit, freetext=freetext, fulltext=fulltext)
+    except:
+        st.error("Korpus kunne ikke hentes. Se på parametrene for korpuset eller prøv igjen.")
+        st.stop()
+    return corpus
 
+@st.cache(suppress_st_warning=True, show_spinner = False)
+def get_dynamic_reference(doctype="digibok", corpus=None, limit=1000):
+    try:
         # get year
         min_year = min(list(corpus["year"]))
         max_year = max(list(corpus["year"]))
@@ -88,9 +110,20 @@ def get_corpus(doctype="digibok", from_year=1990, to_year=2020, limit=1000, free
 
         reference = get_reference(corpus=doctype, from_year=min_year, to_year=max_year, limit=50000)
     except:
-        st.error("Korpus kunne ikke hentes. Se på parametrene for korpuset eller prøv igjen.")
+        st.error("Dynamisk referansekorpus kunne ikke hentes. Se på parametrene for korpuset eller prøv igjen.")
         st.stop()
-    return reference, corpus
+    return reference
+
+@st.cache(suppress_st_warning=True, show_spinner = False)
+def get_static_reference(path=None):
+    try:
+        reference = pd.read_csv(path, header=None)
+        reference.columns = ["word", "freq"]
+        reference = reference.set_index("word")
+    except:
+        st.error("Statisk referansekorpus kunne ikke hentes. Se på parametrene for korpuset eller prøv igjen.")
+        st.stop()
+    return reference
 
 # Streamlit stuff
 st.set_page_config(page_title="NB DH-LAB – Kollokasjoner", layout='wide')
@@ -100,11 +133,11 @@ st.sidebar.image('dhlab-logo-nb.png')
 
 st.write("Appen gir deg kollokasjoner fra [DH-LAB](https://www.nb.no/dh-lab) ved Nasjonalbiblioteket. Andre apper fra oss finner du [her](https://www.nb.no/dh-lab/apper/).")
 
+words = st.text_input("Søk", "", placeholder="Skriv inn basisord her")
+
 uploaded_corpus = st.sidebar.file_uploader(
     "Last opp korpusdefinisjon som Excel-ark", type=["xlsx"], accept_multiple_files=False, key="corpus_upload"
 )
-
-words = st.text_input("Søk", "", placeholder="Skriv inn basisord her")
 
 if st.session_state.corpus_upload is None:
     title = st.sidebar.title("Korpus")
@@ -114,8 +147,8 @@ if st.session_state.corpus_upload is None:
         from_year = st.number_input('Fra år', min_value=1500, max_value=2030, value=1990)
         to_year = st.number_input('Til år', min_value=1500, max_value=2030, value=2020)
         freetext = st.text_input("Metadata (kan stå tomt)", placeholder="""ddc:641.5""", help="""Forenklet metadatasøk. Ved å søke på enkeltord eller fraser søkes innenfor alle felt i metadatabasen. Du kan begrense spørringen til enkeltflet ved å bruke nøkkel:verdi-notasjon, f.eks. title:fisk finner alle dokumenter med _fisk_ i tittelen. Felt som kan brukes i spørringen er: _title_, _authors_, _urn_, _city_, _timestamp_ (YYYYMMDD), _year (YYYY)_, _publisher_, _langs_, _subjects_, _ddc_, _genres_, _literaryform_, _doctype_. Tegnsetting kan generelt ikke brukes i søket, unntaket er i ddc. Kombinasjoner er mulig: title:fisk AND ddc:641.5.""")
-        limit = st.number_input('Antall dokumenter i sample', value=5000)
-        submit_button = st.form_submit_button(label='Kjør!')
+        limit = st.number_input('Antall dokumenter i sample', value=5000)        
+        submit_button = st.form_submit_button(label='Bygg korpus!')
 
     if freetext == "":
         freetext = None
@@ -129,6 +162,9 @@ if st.session_state.corpus_upload is None:
         doctype = doctypes[doctype]
 
 title = st.sidebar.title("Parametre")
+
+reference_corpus = st.sidebar.selectbox("Velg referansekorpus", references.keys(), index=0, help="Velg referansekorpus som kollokasjonene skal beregnes på bakgrunn av.")
+
 before = st.sidebar.slider(
     'Ord før basisord', min_value=0, max_value=50, value=5
 )
@@ -138,35 +174,21 @@ after = st.sidebar.slider(
 relevance_min = st.sidebar.number_input('Terskelverdi: Relevans', value=10)
 counts_min = st.sidebar.number_input('Terskelverdi: Råfrekvens', value=5)
 head = st.sidebar.number_input('Maks. antall kollokasjoner som vises ', value=20)
+reference = ""
 
 if words == "":
     st.info("For å hente ut kollokasjoner, skriv inn basisordet som danner grunnlaget for kollokasjonsanalysen. Det er kun mulig å søke på enkeltord. Søk f.eks. på __vaksine__ for å finne ord (enkeltord) som opptrer sammen med __vaksine__.")
-    st.warning("Appen lager et tilfeldig uttrekk (sample) fra hele samlingen basert på parameterne i menyen til venstre. Det kan være lurt å stille på disse paramaterne for å få mer kontroll over korpuset. Hvis du søker på et sjeldent ord og/eller ønsker et større uttrekk, øk sample-verdien. For å være sikker på at ord du ønsker å søke på faktisk er inneholdt i uttrekket, bruk feltet 'som inneholder fulltekst'.")
+    st.warning("Appen lager et tilfeldig uttrekk (sample) fra hele samlingen basert på parameterne i menyen til venstre. Trykk til slutt _Bygg korpus_. Det kan være lurt å stille på disse paramaterne for å få mer kontroll over korpuset. Hvis du søker på et sjeldent ord og/eller ønsker et større uttrekk, øk sample-verdien. For å være sikker på at ord du ønsker å søke på faktisk er inneholdt i uttrekket, bruk feltet 'som inneholder fulltekst'.")
     st.stop()
 
 if st.session_state.corpus_upload is None:
-    with st.spinner('Sampler nytt korpus / henter referansekorpus...'):
-        reference, corpus = get_corpus(doctype=doctype, from_year=from_year, to_year=to_year, limit=limit, freetext=freetext, fulltext=fulltext)
+    with st.spinner('Sampler nytt korpus...'):
+        corpus = get_corpus(doctype=doctype, from_year=from_year, to_year=to_year, limit=limit, freetext=freetext, fulltext=fulltext)
 else:
     corpus = pd.read_excel(uploaded_corpus)
 
-    # get year
-    min_year = min(list(corpus["year"]))
-    max_year = max(list(corpus["year"]))
-
-    if max_year - min_year == 0:
-        min_year = min_year - 1
-
-    doctype_counter = Counter(list(corpus["doctype"]))
-
-    dominant_doctype = pd.DataFrame(doctype_counter.items(), columns=['doctype', 'freq']).sort_values(by="freq", ascending=False).iloc[0].doctype
-
-    try:
-        with st.spinner('Henter referansekorpus...'):
-            reference = get_reference(corpus=dominant_doctype, from_year=min_year, to_year=max_year, limit=50000)
-    except:
-        st.error("Referansekorpus kunne ikke hentes. Vennligst prøv på nytt.")
-        st.stop()
+# get reference corpus
+reference = get_static_reference(references[reference_corpus])
 
 # get colls
 with st.spinner('Henter kollokasjoner...'):
