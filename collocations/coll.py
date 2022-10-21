@@ -45,7 +45,7 @@ def to_excel(df, index_arg=False):
 
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, sheet_name='Sheet1', index=index_arg)
-        
+
     processed_data = output.getvalue()
     return processed_data
 
@@ -146,7 +146,7 @@ if st.session_state.corpus_upload is None:
         fulltext = st.text_input("Som inneholder fulltekst (kan stå tomt)", placeholder="jakt AND fiske", help="""Tar bare med dokumenter som inneholder ordene i dette feltet. Spørringene kan innehold enkeltord kombinert med logiske operatorer, f.eks. jakt AND fiske_, _jakt OR fiske_, fraser som "i forhold til" eller nærhetsspørringer: _NEAR(jakt fiske, 5)_. Sistnevnte finner dokumenter hvor to ord _jakt_ and _fiske_ opptrer innenfor et vindu av fem ord.""")
         from_year = st.number_input('Fra år', min_value=1500, max_value=2030, value=1990)
         to_year = st.number_input('Til år', min_value=1500, max_value=2030, value=2020)
-        freetext = st.text_input("Metadata (kan stå tomt)", placeholder="""ddc:641.5""", help="""Forenklet metadatasøk. Ved å søke på enkeltord eller fraser søkes innenfor alle felt i metadatabasen. Du kan begrense spørringen til enkeltflet ved å bruke nøkkel:verdi-notasjon, f.eks. title:fisk finner alle dokumenter med _fisk_ i tittelen. Felt som kan brukes i spørringen er: _title_, _authors_, _urn_, _city_, _timestamp_ (YYYYMMDD), _year (YYYY)_, _publisher_, _langs_, _subjects_, _ddc_, _genres_, _literaryform_, _doctype_. Tegnsetting kan generelt ikke brukes i søket, unntaket er i ddc. Kombinasjoner er mulig: title:fisk AND ddc:641.5.""")
+        freetext = st.text_input("Metadata (kan stå tomt)", placeholder="""ddc:\"641.5\"""", help="""Forenklet metadatasøk. Ved å søke på enkeltord eller fraser søkes innenfor alle felt i metadatabasen. Du kan begrense spørringen til enkeltflet ved å bruke nøkkel:verdi-notasjon, f.eks. title:fisk finner alle dokumenter med _fisk_ i tittelen. Felt som kan brukes i spørringen er: _title_, _authors_, _urn_, _city_, _timestamp_ (YYYYMMDD), _year (YYYY)_, _publisher_, _langs_, _subjects_, _ddc_, _genres_, _literaryform_, _doctype_. Søk som inneholder tegnsetting, må generelt omgis med anførselstegn, f.eks. ddc: "641.5". Kombinasjoner er mulig: title:fisk AND ddc:"641.5".""")
         limit = st.number_input('Antall dokumenter i sample', value=5000)        
         submit_button = st.form_submit_button(label='Bygg korpus!')
 
@@ -174,6 +174,7 @@ after = st.sidebar.slider(
 relevance_min = st.sidebar.number_input('Terskelverdi: Relevans', value=10)
 counts_min = st.sidebar.number_input('Terskelverdi: Råfrekvens', value=5)
 head = st.sidebar.number_input('Maks. antall kollokasjoner som vises ', value=20)
+sort_by = st.sidebar.selectbox("Sorter etter", ["Relevans", "Råfrekvens"], index=0, help="Velg om kollokasjoner skal sorteres etter relevans eller råfrekvens (etter kutting).")
 reference = ""
 
 if words == "":
@@ -196,7 +197,11 @@ with st.spinner('Henter kollokasjoner...'):
 colls = colls[(colls.relevance > relevance_min) & (colls.counts > counts_min)].head(head)
 
 colls = colls.reset_index()
-colls.columns = ['kollokat', 'råfrekvens', 'relevans']
+colls.columns = ['Kollokat', 'Råfrekvens', 'Relevans']
+
+if sort_by == "Råfrekvens":
+    colls = colls.sort_values(by="Råfrekvens", ascending=False)
+    
 excel_colls = to_excel(colls)
 excel_corpus = to_excel(corpus)
 
@@ -218,7 +223,7 @@ with col1:
 
 with col2:
     try:
-        wc = get_wordcloud(colls[["kollokat", "relevans"]].set_index("kollokat"), top=head)
+        wc = get_wordcloud(colls[["Kollokat", sort_by]].set_index("Kollokat"), top=head)
         fig, ax = plt.subplots(figsize = (5, 5))
         ax.imshow(wc)
         plt.axis("off")
