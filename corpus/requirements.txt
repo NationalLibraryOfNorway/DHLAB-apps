@@ -1,4 +1,4 @@
-dhlab>=2.9.0
+dhlab>=2.9.4
 pandas==1.0.1
 streamlit
 requests==2.23.0
