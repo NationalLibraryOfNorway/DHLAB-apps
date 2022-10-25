@@ -1,0 +1,7 @@
+dhlab>=2.9.0
+pandas==1.0.1
+streamlit
+requests==2.23.0
+Pillow==7.0.0
+urllib3==1.25.8
+openpyxl
