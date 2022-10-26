@@ -1,0 +1,4 @@
+Pillow == 9.2.0
+dhlab >= 2.9.5
+streamlit == 1.13.0
+openpyxl
