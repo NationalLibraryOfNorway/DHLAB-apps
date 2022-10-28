@@ -3,7 +3,7 @@
 import streamlit as st
 import dhlab.text as dh
 import dhlab.api.dhlab_api as api
-import gnl
+from dhlab import graph_networkx_louvain as gnl
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -57,8 +57,8 @@ def totals(n = 300000):
     return api.totals(n)
 
 
-image = Image.open("DHlab_logo_web_en_black.png")
-st.image(image)
+
+st.image("dhlab-logo-nb.png")
 st.markdown("""Les mer på [DHLAB-siden](https://nb.no/dh-lab)""")
 
 
