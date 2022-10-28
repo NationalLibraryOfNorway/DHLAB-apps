@@ -1,0 +1,6 @@
+dhlab>=2.9.4
+pandas
+streamlit
+requests==2.23.0
+Pillow==7.0.0
+scipy
