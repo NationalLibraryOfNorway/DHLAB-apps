@@ -14,4 +14,4 @@ RUN pip install -r requirements.txt
 COPY . /code
 
 # command to run on container start
-CMD streamlit run st_narrative.py --server.port 5001
+CMD streamlit run st_dispersion.py --server.port 5001
