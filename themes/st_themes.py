@@ -65,17 +65,26 @@ st.markdown("""Les mer på [DHLAB-siden](https://nb.no/dh-lab)""")
 
 st.title('Temaer i tekst')
 
+uploaded_corpus = st.sidebar.file_uploader(
+    "Last opp korpusdefinisjon som Excel-ark", type=["xlsx"], accept_multiple_files=False, key="corpus_upload"
+)
 
 
 # select URN
 # Using the "with" syntax
 
-stikkord = st.text_input('Angi noen stikkord for å forme et utvalg tekster, og velg fra listen under. For å se en avis, skriv navnet på avisen eventuelt sammen med årstall, eller bare lim inn en URN')
-
+if st.session_state.corpus_upload is None:
+    stikkord = st.text_input('Angi noen stikkord for å forme et utvalg tekster, og velg fra listen under. For å se en avis, skriv navnet på avisen eventuelt sammen med årstall, eller bare lim inn en URN')
+else:
+    stikkord = ''
 
 urn = []
 if stikkord == '':
     stikkord = None
+
+# elif uploaded_corpus.boolean:
+#      urn =   uploaded_corpus.urn 
+
 else:
     urn = re.findall("URN:NBN[^ ]+", stikkord)
     if urn != []:
@@ -95,7 +104,13 @@ if relevance_list:
             #antall_dokument = st.number_input("Antall dokument fra 10 til 100", 
             #                                  min_value = 10, max_value = 100, value = 20)
             if urn == []:
-                corpus = get_corpus(freetext=stikkord, number = antall_dokument)
+                # corpus = get_corpus(freetext=stikkord, number = antall_dokument)
+                
+                if st.session_state.corpus_upload is None:
+                    corpus = get_corpus(freetext=stikkord, number = antall_dokument)
+                else:
+                    corpus = pd.read_excel(uploaded_corpus)
+                
                 choices = [', '.join([str(z) for z in x]) for x in corpus[['authors','title', 'year','urn']].values.tolist()]
                 valg = st.selectbox("Velg et dokument", choices)
                 urn = valg.split(', ')[-1]
@@ -126,7 +141,11 @@ else:
             chunksize = st.number_input("Størrelse på chunk (300 og oppover)", min_value = 300, value = 1000)
 
             #antall_dokument = st.number_input("Antall dokument fra 10 til 100", min_value = 10, max_value = 100, value = 20)
-            corpus = get_corpus(freetext=stikkord, number = antall_dokument)
+            if st.session_state.corpus_upload is None:
+                corpus = get_corpus(freetext=stikkord, number = antall_dokument)
+            else:
+                corpus = pd.read_excel(uploaded_corpus)
+            
             choices = [', '.join([str(z) for z in x]) for x in corpus[['authors','title', 'year','urn']].values.tolist()]
             valg = st.selectbox("Velg et dokument", choices)
             urn = valg.split(', ')[-1]
