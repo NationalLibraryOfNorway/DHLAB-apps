@@ -2,6 +2,9 @@ import dhlab as dh
 import streamlit as st
 import pandas as pd
 import re
+
+import traceback
+
 normal_size = 800
 max_doc = 1200
 
@@ -13,12 +16,45 @@ def get_counts(words = None, corpus = None):
         res = pd.DataFrame()
     return res
 
+@st.cache(suppress_st_warning=True, show_spinner=False)
+def deduplicate(docs = None, column = None):
+    """Cells in columns have /-separated values. For counting, these are better distributed on different rows
+    :param docs: is a dataframe of a corpus object
+    :param column: is a column name, the one to be deduplicated"""
+    
+    de_df = []
+    for r in docs.iterrows():
+        d = dict(r[1])  # view the row as a dict - col-names become keys
+        try:
+            for value in [v.strip() for v in d[column].split('/')]:
+                row = d.copy()    # important to make a fresh new copy of the row dict
+                row[column] = value  # let the copy get a unary value
+                #print(row)
+                de_df.append(row)  # add it to new rows
+        except AttributeError:
+            de_df.append(d)
+    return pd.DataFrame(de_df).drop_duplicates()
+
+@st.cache(suppress_st_warning=True, show_spinner=False)
+def countby(dedup=None, counts=None, column=None):
+    """Deduplicated corpus against a counts object
+    :param dedup: is deduplicated corpus
+    :param counts: an instance of Counts().counts - i.e the dataframe
+    :param column: the column to aggregate over"""
+    
+    cols = list(counts.columns)
+    result = pd.merge(
+        dedup[['urn', column]], 
+        counts.transpose().reset_index(), 
+        left_on='urn', 
+        right_on='urn').groupby(column).sum(cols)
+    return result
+
+
 st.set_page_config(page_title="DTM", page_icon=None, layout="wide", initial_sidebar_state="auto", menu_items=None)
 
 st.sidebar.markdown("Velg et korpus fra [corpus-appen](https://beta.nb.no/dhlab/corpus/) eller hent en eller flere URNer fra nb.no eller andre steder")
 
-
-# todo: add logo dhlab-logo-nb.png
 
 corpus_defined = False
 urner = st.sidebar.text_area("Lim inn URNer:","", help="Lim en tekst som har URNer i seg. Teksten trenger ikke å være formatert")
@@ -86,13 +122,18 @@ if corpus_defined:
                 key="search_term", 
                 help="Skriv inn ordene skilt med komma. For å ta med komma, legg inn et til slutt")
             words = [w.strip() for w in words.split(',')]
+            
             if "" in words:
                 words.append(',')
             #st.write(words)
+            
             words = [w for w in words if w != ""]
+            
             if words == [',']:
                 words = ['.',',','!',"?", ';']
+            
             words = list(set(words))
+            
             df = get_counts(words = words, corpus = corpus)
 
         with col2:
@@ -112,33 +153,36 @@ if corpus_defined:
         colA, colB = st.columns(2)
 
         with colA:
-            st.write('Kontroller visning')
-            transpose = st.checkbox("Tabellen viser ordene i kolonner", 
-                                    value=True, 
-                                    help="Fjern krysset for å la kolonnene bestå av dokumenter")
-
+            gruppering = st.selectbox(
+                'Velg grupperingskolonne', 
+                options = ["--ingen gruppering--"] + list(corpusdf.columns)
+            )
+            
         submitted = st.form_submit_button("Klikk her når alt er klart")
         #st.write(words)
 
         tbl = df.loc[[w for w in words if w in df.index]]
         if submitted:
 
-            tbl = tbl.rename(columns=names)
+            #tbl = tbl.rename(columns=names)
 
-            try:
-                if transpose:
-                    t = tbl.transpose()
-                    t = t.reset_index()
 
-                    a = list(t.columns[1:])
-                    a.append(str(t.columns[0]))
-                    t = t[a]
-                    st.dataframe(
-                        t.sort_values(by = t.columns[0], ascending = False).style.format(precision=0).background_gradient().hide(axis=0)
-                    )
-                else:
-                    st.dataframe(
-                        tbl.sort_values(by = tbl.columns[0], ascending = False).style.format(precision=0).background_gradient()
-                    )
-            except:
-                st.markdown("Noe gikk galt - kolonnenavn må være entydig, om dokumentinformasjon antyder kolonner, prøv å legg til _dhlabid_ som del av visningen")
+            if  gruppering == "--ingen gruppering--":
+                t = tbl.transpose()
+                t = t.reset_index()
+
+                a = list(t.columns[1:])
+                a.append(str(t.columns[0]))
+                t = t[a]
+                st.dataframe(
+                    t.sort_values(
+                        by = t.columns[0], 
+                        ascending = False).style.format(precision=0).background_gradient().hide(axis=0)
+                )
+            else:
+                de_df = deduplicate(docs = corpusdf, column=gruppering)
+                count_df = countby(dedup=de_df, counts = tbl, column = gruppering)
+                st.dataframe(count_df.style.format(precision=0).background_gradient().hide(axis=0))
+#        except:
+#                st.markdown("Noe gikk galt - kolonnenavn må være entydig, om dokumentinformasjon antyder #kolonner, prøv å legg til _dhlabid_ som del av visningen")
+#                traceback.print_exc() 
