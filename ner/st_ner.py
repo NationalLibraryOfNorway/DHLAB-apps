@@ -71,19 +71,25 @@ def to_excel(df):
 #
 #
 
-image = Image.open('NB-logo-no-eng-svart.png')
+image = Image.open('dhlab-logo-nb.png') #    'NB-logo-no-eng-svart.png')
 st.image(image, width = 200)
 st.markdown('Les om [Digital Humaniora - DH](https://nb.no/dh-lab) ved Nasjonalbiblioteket. Koden benytter modeller for norsk utviklet for [spaCy](https://spacy.io/models/nb). ')
 
 
 st.title('Personer og steder')
 
+uploaded_corpus = st.file_uploader(
+    "Last opp korpusdefinisjon som Excel-ark", type=["xlsx"], accept_multiple_files=False, key="corpus_upload"
+)
 
-stikkord = st.text_input('Angi noen stikkord for å forme et utvalg tekster, som for eksempel forfatter og tittel for bøker eller avisnavn. For aviser kan du også velge dato på formaet YYYYMMDD. Velg deretter et dokument fra listen under og trykk på knappen "Finn navn og steder"')
-period = st.slider('Begrens listen til en periode', 1800, 2022, (1800, 2022))
-if stikkord == '':
-    stikkord = None
-corpus = get_corpus(freetext=stikkord, from_year=period[0], to_year=period[1])
+if st.session_state.corpus_upload is None:
+    stikkord = st.text_input('Angi noen stikkord for å forme et utvalg tekster, som for eksempel forfatter og tittel for bøker eller avisnavn. For aviser kan du også velge dato på formaet YYYYMMDD. Velg deretter et dokument fra listen under og trykk på knappen "Finn navn og steder"')
+    period = st.slider('Begrens listen til en periode', 1800, 2022, (1800, 2022))
+    if stikkord == '':
+        stikkord = None
+    corpus = get_corpus(freetext=stikkord, from_year=period[0], to_year=period[1])
+else:
+    corpus = pd.read_excel(uploaded_corpus)
 
 choices = [', '.join([str(z) for z in x]) for x in corpus[['authors','title', 'year','urn']].values.tolist()]
 
@@ -120,27 +126,27 @@ if choices != []:
 
             with col1:
 
-                st.header("Navn")
+                st.subheader("Navn")
                 st.dataframe(personer.sort_values(by='frekv', ascending = False))
 
             with col2:
 
-                st.header("Steder")
+                st.subheader("Steder")
                 st.dataframe(steder.sort_values(by='frekv', ascending = False))    
 
             with col3:
 
-                st.header("Organisasjoner")
+                st.subheader("Organisasjoner")
                 st.dataframe(organisasjoner.sort_values(by='frekv', ascending = False))
 
             with col4:
 
-                st.header("Produkter")
+                st.subheader("Produkter")
                 st.dataframe(produkter.sort_values(by='frekv', ascending = False))
 
             with col5:
 
-                st.header("Andre")
+                st.subheader("Andre")
                 st.dataframe(andre)
         elif submit_button and analyse_type == 'POS':
             df, noun, verb, adjektiv, prep, andre = get_pos(urn, model)
@@ -151,27 +157,27 @@ if choices != []:
 
             with col1:
 
-                st.header("Substantiv")
+                st.subheader("Substantiv")
                 st.dataframe(noun.sort_values(by='frekv', ascending = False))
 
             with col2:
 
-                st.header("Verb")
+                st.subheader("Verb")
                 st.dataframe(verb.sort_values(by='frekv', ascending = False))    
 
             with col3:
 
-                st.header("Adjektiv")
+                st.subheader("Adjektiv")
                 st.dataframe(adjektiv.sort_values(by='frekv', ascending = False))
 
             with col4:
 
-                st.header("Preposisjoner")
+                st.subheader("Preposisjoner")
                 st.dataframe(prep.sort_values(by='frekv', ascending = False))
 
             with col5:
 
-                st.header("Andre")
+                st.subheader("Andre")
                 st.dataframe(andre)
             
     if df_defined:
