@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: navn-og-steder-deployment
+  labels:
+    app: navn-og-steder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: navn-og-steder
+  template:
+    metadata:
+      labels:
+        app: navn-og-steder
+    spec:
+      containers:
+      - name: navn-og-steder
+        image: gcr.io/norwegian-language-bank/navn-og-steder:dfd6b849-ed0a-46ba-ac66-72d177087700
+        command: [ "/bin/bash" ]
+        args: [ "-c", "streamlit run ner_app_urn.py --server.port 8501 --server.baseUrlPath /navn-og-steder --browser.gatherUsageStats=False"]
+        ports:
+        - containerPort: 8501
+        resources:
+          limits:
+            cpu: 1
+            ephemeral-storage: 256Mi
+            memory: 2Gi
+          requests:
+            cpu: 1
+            ephemeral-storage: 256Mi
+            memory: 2Gi
