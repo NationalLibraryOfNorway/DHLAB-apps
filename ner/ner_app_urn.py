@@ -78,7 +78,7 @@ with head_col1:
     st.title('Navn og steder')
 with head_col2:
     st.markdown('Les mer om [Digital Humaniora - DH](https://nb.no/dh-lab)')
-    st.markdown('og språkmodellen i [spaCy](https://spacy.io/models/nb). ')
+    st.markdown('og språkmodellene i [spaCy](https://spacy.io/models/nb). ')
 with head_col3:
     image = Image.open("DHlab_logo_web_en_black.png")
     st.image(image)
@@ -95,7 +95,7 @@ with icol1:
                          " lagd for eksempel med https://beta.nb.no/dhlab/korpus/, eller antyd en grupper tekster ved hjelp av stikkord")
 with icol2:
     if method == 'Urnliste':
-        urner = st.text_area("Lim inn URNer:","", help="Lim en tekst som har URNer i seg. Teksten trenger ikke å være formatert")
+        urner = st.text_area("Lim inn URNer:","", help="Lim tekst med URNer. Teksten trenger ikke å være formatert, og kan inneholde mer enn URNer")
         if urner != "":
             urns = re.findall("URN:NBN[^\s.,]+", urner)
             if urns != []:
@@ -117,7 +117,8 @@ with icol2:
         
     else:
         stikkord = st.text_input('Angi noen stikkord for å forme et utvalg tekster','', 
-                                 help="For eksempel forfatter og tittel for bøker eller avisnavn. For aviser kan du også velge dato på formaet YYYYMMDD.")
+                                 help="Skriv inn for eksempel forfatter og tittel for bøker, eller avisnavn for aviser." 
+                                 "For aviser kan dato skrives på formatet YYYYMMDD.")
 
         if stikkord == '':
             stikkord = None
@@ -129,7 +130,7 @@ if corpus_defined:
 else:
     choices = []
  
-st.markdown("#### Velg tekst for analyse og navn på resultatfil")
+st.markdown("#### Velg tekst for analyse, og sett navn på resultatfil")
     
 df_defined = False
 
@@ -140,12 +141,12 @@ if choices != []:
         urn = valg.split(', ')[-1]
         fname = urn.split('-')[-1]
     with txt_col2:
-        filename = st.text_input('Foreslått filnavn', f"{fname}.xlsx")
+        filename = st.text_input('Foreslått filnavn', f"{fname}.xlsx", help="Det er en lagringsknapp under analysetabellen")
         
     if not filename.endswith('.xlsx'):
         filename = f"{filename}.xlsx"
     
-    st.markdown("#### Angi språkmodell og type analyse NER eller POS")
+    st.markdown("#### Angi språkmodell og type analyse — NER for navn og steder, POS for ordkategorier")
     with st.form(key='my_form'):
             
         
@@ -153,14 +154,14 @@ if choices != []:
         colA, colB = st.columns(2)
         
         with colA:
-            analyse_type = st.selectbox("Analysetype - navn (NER) eller kategorier (POS)", ['NER', 'POS'])
+            analyse_type = st.selectbox("Analysetype — navn (NER) eller kategorier (POS)", ['NER', 'POS'])
             
         with colB:
-            model = st.selectbox("Språkmodell", dh.Models().models, help= "Forskjellige modeller gir \
-        forskjellig resultat - da for dansk og nb for norsk bokmål")
+            model = st.selectbox("Språkmodell", dh.Models().models, help= "Forskjellige modeller gir"
+        "forskjellig resultat — da for dansk og nb for norsk bokmål")
             
-        submit_button = st.form_submit_button(label=f'Analyser URN', help = "det kan ta inntil \
-        et halvt minutt å analysere teksten")
+        submit_button = st.form_submit_button(label=f'Analyser URN', help = "det kan ta inntil"
+        " et halvt minutt å analysere teksten")
         
         if submit_button and analyse_type == 'NER':
             df, personer, steder, organisasjoner, produkter, andre = get_ner(urn, model)
@@ -226,7 +227,7 @@ if choices != []:
                 st.dataframe(andre)
             
     if df_defined:
-        if st.download_button('Last ned data i excelformat', to_excel(df),filename, help = "Åpnes i Excel eller tilsvarende"):
+        if st.download_button(f"Last ned data i excelformat til '{filename}'", to_excel(df.reset_index()),filename, help = "Åpnes i Excel eller tilsvarende"):
             True
 else:
     st.write("Her dukker det opp en tekstvelger så snart listen av tekster er definert")
