@@ -1,0 +1,5 @@
+**/utils/*
+**/.python-version
+**/ingress.yaml
+**/deployment.yaml
+
