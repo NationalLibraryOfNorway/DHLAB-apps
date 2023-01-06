@@ -12,7 +12,7 @@ commonmark==0.9.1
 contourpy==1.0.5
 cycler==0.11.0
 decorator==5.1.1
-dhlab==2.9.1
+dhlab==2.13.2
 entrypoints==0.4
 et-xmlfile==1.1.0
 executing==1.1.0
