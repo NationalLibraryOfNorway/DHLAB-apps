@@ -67,7 +67,7 @@ def aggrid_interactive_table(df: pd.DataFrame):
         enable_enterprise_modules=False,
         gridOptions=options.build(),
         theme="alpine",
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        update_mode=GridUpdateMode.MODEL_CHANGED,
         fit_columns_on_grid_load=True,
         allow_unsafe_jscode=False
     )
@@ -304,7 +304,7 @@ try:
     if selection["selected_rows"] != []:
         selected_collword = selection["selected_rows"][0]["Kollokat"]
 
-        query = "NEAR(%s %s, %s)" % (words, selected_collword, str(int(before) + int(after)))
+        query = """NEAR("%s" "%s", %s)""" % (words, selected_collword, str(int(before) + int(after)))
 
         with st.spinner('Henter konkordanser...'):
             conc = get_concordances(corpus, query, limit=5000, window=20)
