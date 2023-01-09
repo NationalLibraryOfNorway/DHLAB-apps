@@ -1,3 +1,4 @@
+import warnings
 import matplotlib.pyplot as plt
 import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode
@@ -12,6 +13,8 @@ from random import sample
 from collections import Counter
 import wordcloud
 import json
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 limit_conc = 10
 
