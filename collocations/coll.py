@@ -35,6 +35,7 @@ references = {
 }
 
 # ADAPTED FROM: https://discuss.streamlit.io/t/how-to-download-file-in-streamlit/1806
+@st.cache(suppress_st_warning=True, show_spinner=False)
 def get_table_download_link(content, link_content="XLSX", filename="corpus.xlsx"):
     """Generates a link allowing the data in a given panda dataframe to be downloaded
     in:  dataframe
@@ -73,6 +74,7 @@ def aggrid_interactive_table(df: pd.DataFrame):
 
     return selection
 
+@st.cache(suppress_st_warning=True, show_spinner=False)
 def to_excel(df, index_arg=False):
     output = BytesIO()
 
@@ -158,6 +160,7 @@ def get_static_reference(path=None):
         st.stop()
     return reference
 
+@st.cache(suppress_st_warning=True, show_spinner=False)
 def get_concordances(corpus, query, limit=5000, window=20):
     try:
         conc = cc.Concordance(corpus, query, limit=5000, window=window)
