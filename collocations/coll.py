@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import streamlit as st
+from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode
+from st_aggrid.shared import GridUpdateMode
 import dhlab.api.dhlab_api as d2
 import dhlab.text.conc_coll as cc
 import pandas as pd
@@ -10,6 +12,8 @@ from random import sample
 from collections import Counter
 import wordcloud
 import json
+
+limit_conc = 10
 
 doctypes = {'Alle dokumenter': 'all', 'Aviser': 'digavis', 'Bøker': 'digibok', 'Tidsskrift': 'digitidsskrift', 'Stortingsdokumenter': 'digistorting'}
 
@@ -39,6 +43,33 @@ def get_table_download_link(content, link_content="XLSX", filename="corpus.xlsx"
         b64 = base64.b64encode(content).decode()
     href = f'<a href="data:file/csv;base64,{b64}" download="{filename}">{link_content}</a>'
     return href
+
+# ADAPTED FROM: https://github.com/streamlit/example-app-interactive-table/blob/main/streamlit_app.py
+def aggrid_interactive_table(df: pd.DataFrame):
+    """Creates an st-aggrid interactive table based on a dataframe.
+    Args:
+        df (pd.DataFrame]): Source dataframe
+    Returns:
+        dict: The selected row
+    """
+    options = GridOptionsBuilder.from_dataframe(
+        df, enableRowGroup=True, enableValue=True
+    )
+
+    #options.configure_side_bar()
+
+    options.configure_selection("single")
+    selection = AgGrid(
+        df,
+        enable_enterprise_modules=False,
+        gridOptions=options.build(),
+        theme="alpine",
+        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        fit_columns_on_grid_load=True,
+        allow_unsafe_jscode=False
+    )
+
+    return selection
 
 def to_excel(df, index_arg=False):
     output = BytesIO()
@@ -125,6 +156,38 @@ def get_static_reference(path=None):
         st.stop()
     return reference
 
+def get_concordances(corpus, query, limit=5000, window=20):
+    try:
+        conc = cc.Concordance(corpus, query, limit=5000, window=window)
+    except:
+        st.error("Konkordanser kunne ikke hentes.")
+        st.stop()
+    return conc
+
+def print_concordances(conc):
+    for row in conc.show(n=min(limit_conc, conc.size), style = False).iterrows():
+        urn = row[1]["urn"]
+        metadata = corpus[corpus["urn"] == urn][['title', 'authors', 'year', 'timestamp']]
+        metadata = metadata.iloc[0]
+
+        if 'digavis' in urn:
+            timestamp = metadata["timestamp"]
+        else:
+            timestamp = metadata["year"]
+
+        if metadata["authors"] is None:
+            metadata["authors"] = ""
+        if metadata["title"] is None:
+            metadata["title"] = ""
+
+        url = "https://urn.nb.no/%s" % (urn)
+        link = "<a href='%s' target='_blank'>%s – %s – %s</a>" % (url, metadata["title"], metadata["authors"], timestamp)
+
+        conc_markdown = row[1]["concordance"].replace('<b>', '**')
+        conc_markdown = conc_markdown.replace('</b>', '**')
+        html = "%s %s" % (link, conc_markdown)
+        st.markdown(html, unsafe_allow_html=True)
+
 # Streamlit stuff
 st.set_page_config(page_title="NB DH-LAB – Kollokasjoner", layout='wide')
 st.title('Kollokasjoner')
@@ -201,6 +264,9 @@ colls.columns = ['Kollokat', 'Råfrekvens', 'Relevans']
 
 if sort_by == "Råfrekvens":
     colls = colls.sort_values(by="Råfrekvens", ascending=False)
+
+# round
+colls["Relevans"] = colls["Relevans"].round(2)
     
 excel_colls = to_excel(colls)
 excel_corpus = to_excel(corpus)
@@ -219,8 +285,8 @@ with col2:
 
 
 with col1:
-    st.write(colls.to_html(escape=False, index=False), unsafe_allow_html=True)
-
+    selection = aggrid_interactive_table(df=colls)
+    #st.write(colls.to_html(escape=False, index=False), unsafe_allow_html=True)
 with col2:
     try:
         wc = get_wordcloud(colls[["Kollokat", sort_by]].set_index("Kollokat"), top=head)
@@ -230,6 +296,21 @@ with col2:
         st.pyplot(fig)
     except:
         pass
+
+try:
+    if selection["selected_rows"] != []:
+        selected_collword = selection["selected_rows"][0]["Kollokat"]
+
+        query = "NEAR(%s %s, %s)" % (words, selected_collword, str(int(before) + int(after)))
+
+        with st.spinner('Henter konkordanser...'):
+            conc = get_concordances(corpus, query, limit=5000, window=20)
+            st.markdown("### Eksempler fra korpuset")
+            print_concordances(conc)
+            if conc.size > limit_conc:
+                st.button('Vis flere konkordanser')
+except:
+    pass
 
 st.write('\n')
 st.write('\n__Bakgrunn__: Det statistiske kollokasjonsmålet som brukes her, er en variant av PMI (pointwise mutual information), med sannsynligheter som proporsjoner av frekvens, på formen: 𝑝𝑚𝑖(𝑥,𝑦)=𝑝(𝑥|𝑦)𝑝(𝑥)=𝑝(𝑦|𝑥)𝑝(𝑦). Det kan ses på som en probabilistisk versjon av relevans, dvs. at y er relevant x og omvendt. PMI er brukt i stedet for tf-idf for å beregne assosisasjoner mellom ord. PMI-verdiene er beregnet på normaliserte frekvenser (relativfrekvenser) som betyr at det faktiske tallet kan tolkes som et disproporsjonalt tall.')
