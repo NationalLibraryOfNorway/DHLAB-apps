@@ -55,13 +55,12 @@ def aggrid_interactive_table(df: pd.DataFrame):
     Returns:
         dict: The selected row
     """
-    options = GridOptionsBuilder.from_dataframe(
-        df, enableRowGroup=True, enableValue=True
-    )
+    options = GridOptionsBuilder.from_dataframe(df)
 
     #options.configure_side_bar()
 
-    options.configure_selection("single")
+    options.configure_selection(selection_mode="single")
+    options.configure_pagination(enabled=False)
     selection = AgGrid(
         df,
         enable_enterprise_modules=False,
@@ -93,7 +92,7 @@ def sampling(a, b):
 def get_collocation(words, corpus, before = 5, after = 5, reference = None):
     try:
         colls = cc.Collocations(words=words, corpus=corpus, before=before, after=after, reference=reference)
-        colls = colls.show(sortby="relevance")
+        colls = colls.show(sortby="relevance", n=1000)
     except:
         st.error("Kollokasjoner kunne ikke hentes. Se på parametrene for korpuset/kollokasjonene eller prøv igjen. Problemet kan oppstå hvis du bruker et veldig stort korpus som strekker seg over mange år.")
         st.stop()
