@@ -63,7 +63,7 @@ col1, col2, col3 = st.columns([1,1,3])
 with col1:
     doctype = st.selectbox(
         "Type dokument", 
-        ["digibok", "digavis", "digitidsskrift", "digimanus"], 
+        ["digibok", "digavis", "digitidsskrift", "digimanus", "digistorting"], 
         help="Dokumenttypene følger Nasjonalbibliotekets digitale typer")
 
 with col2:
@@ -71,7 +71,8 @@ with col2:
         "Språk", 
         ["nob", "nno", "dan", "swe", "sme", "smj", "fkv", "eng", "fra", "spa", "ger"],  
         #default = "nob",                   
-        help="Velg fra listen"
+        help="Velg fra listen",
+        disabled=(doctype in ['digistorting'])
     )
     lang = " AND ".join(list(lang))
     if lang == "":
@@ -88,10 +89,15 @@ with col3:
 st.subheader("Forfatter og tittel") ###################################################
 cola, colb = st.columns(2)
 with cola:
-        author = st.text_input("Forfatter", "", help="Feltet blir kun tatt hensyn til for digibok")
+        author = st.text_input("Forfatter", "",
+                               help="Feltet blir kun tatt hensyn til for digibok",
+                               disabled=(doctype in ['digavis', 'digistorting']))
 
 with colb:
-        title = st.text_input("Tittel", "", help = "Søk etter titler. For aviser vil tittel matche avisnavnet.")
+        title = st.text_input("Tittel", "", 
+                              help = "Søk etter titler. For aviser vil tittel matche avisnavnet.",
+                              disabled=(doctype in ['digistorting'])
+                              )
 
 st.subheader("Meta- og innholdsdata") ##########################################################
 
@@ -102,18 +108,25 @@ with cold:
         "Ord eller fraser i teksten", 
         "", 
         help = "Matching på innholdsord skiller ikke mellom stor og liten bokstav."
-            " Trunkert søk er mulig, slik at demokrat* vil finne bøker som inneholder demokrati og demokratisk blant andre treff")
+            " Trunkert søk er mulig, slik at demokrat* vil finne bøker som inneholder demokrati og demokratisk blant andre treff",
+            )
 
 with cole:
-    ddk = st.text_input("Dewey desimaltall", "", help="Input matcher et deweynummer. For å matche hele serien føy til en `*`. Bruk OR for å kombinere: 364* OR 916*")
+    ddk = st.text_input("Dewey desimaltall", "",
+                        help="Input matcher et deweynummer. For å matche hele serien føy til en `*`. Bruk OR for å kombinere: 364* OR 916*", 
+                        disabled=(doctype in ['digistorting'])
+                        )
     # if ddk != "" and not ddk.endswith("!"):
     #     ddk = f"{ddk}*"
     # if ddk.endswith("!"):
     #     ddk = ddk[:-1]
 
 with colf:
-    subject = st.text_input("Emneord","", help="For å matche på flere emner, skill med OR for alternativ"
-                            " og AND for begrense. Trunkert søk går også — for eksempel vil barne* matche barnebok og barnebøker")
+    subject = st.text_input("Emneord","",
+                            help="For å matche på flere emner, skill med OR for alternativ"
+                            " og AND for begrense. Trunkert søk går også — for eksempel vil barne* matche barnebok og barnebøker",
+                            disabled=(doctype in ['digistorting'])
+                            )
 
 
 df_defined = False
@@ -141,8 +154,11 @@ with st.form(key='my_form'):
             df = dh.Corpus(doctype=v(doctype), fulltext= v(fulltext), from_year = years[0], to_year = years[1], title=v(title), limit=limit)
             columns = ['urn','title', 'year', 'timestamp', 'city']
         elif doctype in ['digitidsskrift']:
-            df = dh.Corpus(doctype=v(doctype), author=v(author), fulltext=fulltext, from_year = years[0], to_year = years[1], title=v(title), subject=v(subject), ddk= v(ddk), lang=lang, limit=limit)
+            df = dh.Corpus(doctype=v(doctype), author=v(author), fulltext=v(fulltext), from_year = years[0], to_year = years[1], title=v(title), subject=v(subject), ddk= v(ddk), lang=lang, limit=limit)
             columns = ['dhlabid', 'urn', 'title','city','timestamp','year', 'publisher', 'ddc', 'langs']
+        elif doctype in ['digistorting']:
+            df = dh.Corpus(doctype=v(doctype), fulltext=v(fulltext), from_year = years[0], to_year = years[1], limit=limit)
+            columns = ['dhlabid', 'urn', 'year']
         else:
             df = dh.Corpus(doctype=v(doctype), author=v(author), fulltext=v(fulltext), from_year = years[0], to_year = years[1], title=v(title), subject=v(subject), ddk= v(ddk), lang=lang, limit=limit)
             columns = ['dhlabid', 'urn', 'authors', 'title','city','timestamp','year', 'publisher', 'ddc','subjects', 'langs']
