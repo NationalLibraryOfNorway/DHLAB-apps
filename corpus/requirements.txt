@@ -1,5 +1,5 @@
-dhlab>=2.9.4
-pandas==1.0.1
+dhlab
+pandas
 streamlit
 requests==2.23.0
 Pillow==7.0.0
