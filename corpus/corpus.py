@@ -47,17 +47,17 @@ def v(x):
 ### Headers
 
 col_zero, col_one, col_two, col_three = st.columns(4)
-with col_two:
-    st.header("Konstruer et korpus" )
-    st.markdown("""Les mer om DH-labens apper på [DHLAB-siden](https://nb.no/dh-lab)""")
+with col_zero:
+    st.header("Konstruer korpus" )
 
-with col_zero:    
+with col_three:    
     image = Image.open("DHlab_logo_web_en_black.png")
     st.image(image, width=250)
+    st.markdown("""Les mer om DH-labens apper på [DHLAB-siden](https://nb.no/dh-lab)""")
 
 
-
-st.subheader('Tekst-type og periode')
+st.subheader('Metadata')
+#st.subheader('Tekst-type og periode')
 col1, col2, col3 = st.columns([1,1,3])
 
 with col1:
@@ -86,7 +86,7 @@ with col3:
     1810, year, (1950, year))
 
 
-st.subheader("Forfatter og tittel") ###################################################
+#st.subheader("Forfatter og tittel") ###################################################
 cola, colb = st.columns(2)
 with cola:
         author = st.text_input("Forfatter", "",
@@ -99,7 +99,7 @@ with colb:
                               disabled=(doctype in ['digistorting'])
                               )
 
-st.subheader("Meta- og innholdsdata") ##########################################################
+#st.subheader("Meta- og innholdsdata") ##########################################################
 
 
 cold, cole, colf = st.columns(3)
@@ -130,6 +130,8 @@ with colf:
 
 
 df_defined = False
+
+
 
 st.subheader("Organisering") ######################################################################
 
