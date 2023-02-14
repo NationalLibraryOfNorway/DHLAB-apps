@@ -6,7 +6,6 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 import urllib
-
 import datetime
 
 
@@ -46,15 +45,21 @@ def v(x):
 
 ### Headers
 
-col_zero, col_one, col_two, col_three = st.columns(4)
+col_zero, col_one, col_two, col_three = st.columns([1,1,4,1])
 with col_two:
+    
     #st.header("Konstruer et korpus" )
     #st.markdown("""Les mer om DH-labens apper på [DHLAB-siden](https://nb.no/dh-lab)""")
     pass
 with col_three:    
-    image = Image.open("DHlab_logo_web_en_black.png")
-    st.image(image, width=250)
-
+    #image = Image.open("DHlab_logo_web_en_black.png")
+    #st.image(image)
+    st.markdown("""<style>
+img {
+  opacity: 0.6;
+}
+</style><a href="https://nb.no/dhlab">
+  <img src="https://github.com/NationalLibraryOfNorway/DHLAB-apps/raw/main/corpus/DHlab_logo_web_en_black.png" style="width:250px"></a>""", unsafe_allow_html = True)
 
 
 st.subheader('Definer et korpus med innholdsdata og metadata')
