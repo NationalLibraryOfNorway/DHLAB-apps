@@ -46,7 +46,9 @@ def v(x):
 
 ### Headers
 
-col_zero, col_one, col_two, col_three = st.columns(4)
+col_zero, col_two, col_three = st.columns([4,1,1])
+with col_zero:
+    st.subheader('Definer et korpus med innholdsdata og metadata')
 with col_three:    
     #image = Image.open("DHlab_logo_web_en_black.png")
     #st.image(image)
@@ -57,8 +59,8 @@ img {
 </style><a href="https://nb.no/dhlab">
   <img src="https://github.com/NationalLibraryOfNorway/DHLAB-apps/raw/main/corpus/DHlab_logo_web_en_black.png" style="width:250px"></a>""", unsafe_allow_html = True)
 
+st.write("---")
 
-st.subheader('Definer et korpus med innholdsdata og metadata')
 col1, col2, col3 = st.columns([1,1,3])
 
 with col1:
@@ -131,16 +133,16 @@ with colf:
 
 
 df_defined = False
-
+st.write("---")
 st.subheader("Lag korpuset og last ned") ######################################################################
 
 
 
 with st.form(key='my_form'): 
     
-    colx, coly,_ = st.columns([2,2,4])
+    colx, _,coly = st.columns([2,2,4])
     with colx:
-        limit = st.number_input(f"Maksimum antall dokument i korpuset, inntil {max_size_corpus}", min_value=1, max_value = max_size_corpus, value = int(default_size*max_size_corpus/100))
+        limit = st.number_input(f"Maks antall, inntil {max_size_corpus}", min_value=1, max_value = max_size_corpus, value = int(default_size*max_size_corpus/100))
     
     with coly:
         filnavn = st.text_input("Filnavn for nedlasting", "korpus.xlsx")
