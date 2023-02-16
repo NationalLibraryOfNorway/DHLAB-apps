@@ -26,7 +26,7 @@ max_rows = 1200
 min_rows = 800
 default_size = 10 # percent of max_size_corpus
 
-@st.cache(suppress_st_warning=True, show_spinner=False)
+@st.cache_data(suppress_st_warning=True, show_spinner=False)
 def to_excel(df):
     """Make an excel object out of a dataframe as an IO-object"""
     output = BytesIO()
@@ -144,7 +144,7 @@ with st.form(key='my_form'):
     with colx:
         limit = st.number_input(f"Maks antall, inntil {max_size_corpus}", min_value=1, max_value = max_size_corpus, value = int(default_size*max_size_corpus/100))
     with col_order:
-        ordertype = st.selectbox("Metode for uthenting", ['first', 'rank', 'random'], help="Metode 'first' er raskest, 'rank' er nest raskest, og gir de mest relevant dokumentene, og 'random' velger ut et sett med dokument")
+        ordertype = st.selectbox("Metode for uthenting", ['first', 'rank', 'random'], help="Metode 'first' er raskest, og velger dokument etter hvert som de blir funnet, mens'rank' gir en rask ordning på dokumenter om korpuset er definert med et fulltekstsøk og sorterer på relevans, siste valg er 'random' som først samler inn hele korpuset og gjør et vilkårlig utvalg av tekster derfra.")
     with coly:
         filnavn = st.text_input("Filnavn for nedlasting", "korpus.xlsx")
 
