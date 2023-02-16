@@ -10,8 +10,9 @@ max_doc = 1200
 
 #@st.cache_data(show_spinner=False)
 def get_counts(words = None, corpus = None):
+    """Get counts - part is either relfreq or count"""
     try:
-        res = dh.Counts(corpus, words=words).counts['count']
+        res = dh.Counts(corpus, words=words).counts
     except:
         res = pd.DataFrame()
     return res
@@ -36,16 +37,21 @@ def deduplicate(docs = None, column = None):
     return pd.DataFrame(de_df).drop_duplicates()
 
 @st.cache_data(show_spinner=False)
-def countby(dedup=None, counts=None, column=None):
+def countby(dedup=None, counts=None, column=None, absolute = True):
     """Deduplicated corpus against a counts object
     :param dedup: is deduplicated corpus
     :param counts: an instance of Counts().counts - i.e the dataframe
     :param column: the column to aggregate over"""
     
     cols = list(counts.columns)
-    result = pd.concat([
+    grouped = pd.concat([
         dedup[['dhlabid', column]].set_index('dhlabid'), 
-        counts.transpose().reset_index().set_index('urn')], axis = 1).groupby(column).sum(cols)
+        counts.transpose().reset_index().set_index('urn') 
+    ], axis = 1).groupby(column)
+    if absolute:
+        result = grouped.sum(cols)
+    else:
+        result = grouped.fillna(0).avg(cols)
     return result
 
 
@@ -112,55 +118,64 @@ if corpus_defined:
     #st.write(corpus_defined, len(corpus.corpus))
     corpusdf = corpus.corpus
     
-    with st.form("my_form"):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            words = st.text_input(
-                "Frekvenser for en liste ord", 
-                search, 
-                key="search_term", 
-                help="Skriv inn ordene skilt med komma. For å ta med komma, legg inn et til slutt")
-            words = [w.strip() for w in words.split(',')]
-            
-            if "" in words:
-                words.append(',')
-            #st.write(words)
-            
-            words = [w for w in words if w != ""]
-            
-            if words == [',']:
-                words = ['.',',','!',"?", ';']
-            
-            words = list(set(words))
-            
-            df = get_counts(words = words, corpus = corpus)
 
-        with col2:
-            gruppering = st.selectbox(
-                'Velg grupperingskolonne', 
-                options = ["--ingen gruppering--"] + [x for x in corpusdf.columns if x not in 'dhlabid urn sesamid isbn oaiid isbn10'.split()]
-            )
+    col1, col2, colfreq, col3 = st.columns(4)
+    with col1:
+        words = st.text_input(
+            "Frekvenser for en liste ord", 
+            search, 
+            key="search_term", 
+            help="Skriv inn ordene skilt med komma. For å ta med komma, legg inn et til slutt")
+        words = [w.strip() for w in words.split(',')]
+
+        if "" in words:
+            words.append(',')
+        #st.write(words)
+
+        words = [w for w in words if w != ""]
+
+        if words == [',']:
+            words = ['.',',','!',"?", ';']
+
+        words = list(set(words))
+
+        df = get_counts(words = words, corpus = corpus)
         
-        with col3:
-            axis_coloring = st.checkbox("Kryss av for å fargelegge matrisen horisontalt", value=True, help="Fjern avkrysning for endringer vertikalt")
-            if axis_coloring == True:
-                axis = 1
-            else:
-                axis = 0
+    with col2:
+        gruppering = st.selectbox(
+            'Velg grupperingskolonne', 
+            options = ["--ingen gruppering--"] + [x for x in corpusdf.columns if x not in 'dhlabid urn sesamid isbn oaiid isbn10'.split()]
+        )
+    with colfreq:
+        partselect = st.selectbox("Absolutt eller relative frekvenser", ['absolutt', 'relative'])
+        if partselect == 'absolutt':
+            part = 'count'
+        else:
+            part = 'relfreq'
+            
+    with col3:
+        axis_coloring = st.selectbox("Horisontal eller vertikal fargelegging", ['horisontal','vertikal'], help="Velger orientering på endring av fargestyrke")
+        if axis_coloring == 'horisontal':
+            axis = 0
+        else:
+            axis = 1
                 
-        submitted = st.form_submit_button("Klikk her når alt er klart")
-        
-        tbl = df.loc[[w for w in words if w in df.index]]
-        
-        if submitted:
-            if  gruppering == "--ingen gruppering--":
-                t = tbl.transpose()
-                t = t.reset_index()
-                t['link'] = t.urn.map(lambda x: f"https://nb.no/items/{x}")
-                st.dataframe(t[t.columns[1:]].style.format(precision=0).background_gradient(axis=axis))
-            else:
-                de_df = deduplicate(docs = corpusdf, column=gruppering)
-                count_df = countby(dedup=de_df, counts = tbl, column = gruppering)
-                #st.write(tbl)
-                #st.write(de_df)
-                st.dataframe(count_df.style.format(precision=0).background_gradient(axis = axis))
+    #submitted = st.button("Klikk her når alt er klart")
+    tbl = df[part].loc[[w for w in words if w in df.index]]        
+    if part == 'count':
+        precision = 0
+    else:
+        precision = 3
+    #if submitted:
+    if  gruppering == "--ingen gruppering--":
+        t = tbl.transpose()
+        t = t.reset_index()
+        t['link'] = t.urn.map(lambda x: f"https://nb.no/items/{x}")
+
+        st.dataframe(t[t.columns[1:]].style.format(precision=precision).background_gradient(axis=axis))
+    else:
+        de_df = deduplicate(docs = corpusdf, column=gruppering)
+        count_df = countby(dedup=de_df, counts = tbl, column = gruppering)
+        #st.write(tbl)
+        #st.write(de_df)
+        st.dataframe(count_df.style.format(precision=precision).background_gradient(axis = axis))
