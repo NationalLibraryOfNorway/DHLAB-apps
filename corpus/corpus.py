@@ -26,7 +26,6 @@ max_rows = 1200
 min_rows = 800
 default_size = 10 # percent of max_size_corpus
 
-@st.cache_data(suppress_st_warning=True, show_spinner=False)
 def to_excel(df):
     """Make an excel object out of a dataframe as an IO-object"""
     output = BytesIO()
