@@ -8,15 +8,15 @@ import traceback
 normal_size = 800
 max_doc = 1200
 
-@st.cache(suppress_st_warning=True, show_spinner=False)
+#@st.cache_data(show_spinner=False)
 def get_counts(words = None, corpus = None):
     try:
-        res = dh.Counts(corpus, words=words).counts
+        res = dh.Counts(corpus, words=words).counts['count']
     except:
         res = pd.DataFrame()
     return res
 
-@st.cache(suppress_st_warning=True, show_spinner=False)
+@st.cache_data(show_spinner=False)
 def deduplicate(docs = None, column = None):
     """Cells in columns have /-separated values. For counting, these are better distributed on different rows
     :param docs: is a dataframe of a corpus object
@@ -35,7 +35,7 @@ def deduplicate(docs = None, column = None):
             de_df.append(d)
     return pd.DataFrame(de_df).drop_duplicates()
 
-@st.cache(suppress_st_warning=True, show_spinner=False)
+@st.cache_data(show_spinner=False)
 def countby(dedup=None, counts=None, column=None):
     """Deduplicated corpus against a counts object
     :param dedup: is deduplicated corpus
