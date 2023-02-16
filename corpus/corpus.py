@@ -140,10 +140,11 @@ st.subheader("Lag korpuset og last ned") #######################################
 
 with st.form(key='my_form'): 
     
-    colx, _,coly = st.columns([2,2,4])
+    colx, col_order,coly = st.columns([2,2,4])
     with colx:
         limit = st.number_input(f"Maks antall, inntil {max_size_corpus}", min_value=1, max_value = max_size_corpus, value = int(default_size*max_size_corpus/100))
-    
+    with col_order:
+        ordertype = st.selectbox("Metode for uthenting", ['first', 'rank', 'random'], help="Metode 'first' er raskest, 'rank' er nest raskest, og gir de mest relevant dokumentene, og 'random' velger ut et sett med dokument")
     with coly:
         filnavn = st.text_input("Filnavn for nedlasting", "korpus.xlsx")
 
@@ -151,19 +152,19 @@ with st.form(key='my_form'):
     
     if submit_button:
         if doctype in ['digimanus']:
-            df = dh.Corpus(doctype=v(doctype), limit=limit)
+            df = dh.Corpus(doctype=v(doctype), limit=limit, order_by = ordertype)
             columns = ['urn','title']
         elif doctype in ['digavis']:
-            df = dh.Corpus(doctype=v(doctype), fulltext= v(fulltext), from_year = years[0], to_year = years[1], title=v(title), limit=limit)
+            df = dh.Corpus(doctype=v(doctype), fulltext= v(fulltext), from_year = years[0], to_year = years[1], title=v(title), limit=limit, order_by = ordertype)
             columns = ['urn','title', 'year', 'timestamp', 'city']
         elif doctype in ['digitidsskrift']:
-            df = dh.Corpus(doctype=v(doctype), author=v(author), fulltext=v(fulltext), from_year = years[0], to_year = years[1], title=v(title), subject=v(subject), ddk= v(ddk), lang=lang, limit=limit)
+            df = dh.Corpus(doctype=v(doctype), author=v(author), fulltext=v(fulltext), from_year = years[0], to_year = years[1], title=v(title), subject=v(subject), ddk= v(ddk), lang=lang, limit=limit, order_by = ordertype)
             columns = ['dhlabid', 'urn', 'title','city','timestamp','year', 'publisher', 'ddc', 'langs']
         elif doctype in ['digistorting']:
-            df = dh.Corpus(doctype=v(doctype), fulltext=v(fulltext), from_year = years[0], to_year = years[1], limit=limit)
+            df = dh.Corpus(doctype=v(doctype), fulltext=v(fulltext), from_year = years[0], to_year = years[1], limit=limit, order_by = ordertype)
             columns = ['dhlabid', 'urn', 'year']
         else:
-            df = dh.Corpus(doctype=v(doctype), author=v(author), fulltext=v(fulltext), from_year = years[0], to_year = years[1], title=v(title), subject=v(subject), ddk= v(ddk), lang=lang, limit=limit)
+            df = dh.Corpus(doctype=v(doctype), author=v(author), fulltext=v(fulltext), from_year = years[0], to_year = years[1], title=v(title), subject=v(subject), ddk= v(ddk), lang=lang, limit=limit, order_by = ordertype)
             columns = ['dhlabid', 'urn', 'authors', 'title','city','timestamp','year', 'publisher', 'ddc','subjects', 'langs']
         
         st.markdown(f"Fant totalt {df.size} dokumenter")
