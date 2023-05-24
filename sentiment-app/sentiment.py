@@ -161,8 +161,7 @@ def coll_sentiment(coll, word="barnevern", return_score_only=False):
     coll = group_index_terms(coll)
 
     # Data import
-    pos = load_sentiment_terms(sentiment="Positive")
-    neg = load_sentiment_terms(sentiment="Negative")
+    pos, neg = load_norsentlex()
 
     positive_counts = count_matching_tokens(coll, pos)
     negative_counts = count_matching_tokens(coll, neg)

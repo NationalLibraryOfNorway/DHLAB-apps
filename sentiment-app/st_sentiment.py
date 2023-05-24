@@ -1,10 +1,12 @@
+import datetime
+from io import BytesIO
+
+import pandas as pd
 import streamlit as st
 import dhlab as dh
-import pandas as pd
-import datetime
-from PIL import Image
+
 from sentiment import compute_sentiment_analysis
-from io import BytesIO
+
 
 df_defined = False
 
@@ -12,19 +14,19 @@ df_defined = False
 def to_excel(df):
     """Make an excel object out of a dataframe as an IO-object"""
     output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='openpyxl')
-    df.to_excel(writer, index=False, sheet_name='Sheet1')
-    worksheet = writer.sheets['Sheet1']
-    writer.save()
+
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='Sheet1', index=False)
+
     processed_data = output.getvalue()
     return processed_data
 
 @st.cache_data
-def load_data(word, city, from_year, to_year, number_of_docs):
+def load_data(doctype, word, city, from_year, to_year, number_of_docs):
     corpus = dh.Corpus(
-            doctype="digavis",
+            doctype=doctype,
             fulltext=word,
-            freetext=f"city: {city}",
+            freetext=f"city: {city}" if city is not None else None,
             from_year=from_year,
             to_year = to_year,
             limit=number_of_docs
@@ -52,7 +54,7 @@ img {
   opacity: 1.0;
 }
 </style><a href="https://nb.no/dhlab">
-  <img src="https://github.com/NationalLibraryOfNorway/DHLAB-apps/raw/main/sentiment-app/dhlab-logo-nb.png" style="width:250px"></a>""",
+  <img src="https://github.com/Sprakbanken/sentimentanalyse/blob/main/dhlab-logo-nb.png" style="width:250px"></a>""",
    unsafe_allow_html = True
 )
 st.title("Sentimentanalyse")
@@ -93,7 +95,7 @@ with st.sidebar.form(key='corpus_form'):
     submit_button = st.form_submit_button(label='Hent tekstutvalg')
     if submit_button:
         load_text = st.text('Laster inn korpus...')
-        corpus = load_data(word, city, from_year, to_year, number_of_docs).frame
+        corpus = load_data(doctype, word, city, from_year, to_year, number_of_docs).frame
         load_text.text('Korpuset er lastet inn.')
 
 if st.session_state.corpus_upload is not None:
